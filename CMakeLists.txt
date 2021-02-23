@@ -118,5 +118,9 @@ set_target_properties(test1 PROPERTIES
     QT_QML_MODULE_VERSION 1.0
     QT_QML_MODULE_URI GameOfLifeModel
 )
+set_target_properties(test1 PROPERTIES
+    WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE TRUE
+)
 
 qt6_qml_type_registration(test1)

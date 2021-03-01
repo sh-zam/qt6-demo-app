@@ -1,4 +1,3 @@
-#include "mainwindow.h"
 #include "./ui_mainwindow.h"
 #include <QLayout>
 #include "TheOpenGlWidget.h"
@@ -6,13 +5,16 @@
 #include <QDockWidget>
 #include <QtQuickWidgets/QQuickWidget>
 #include <QQmlEngine>
+#include "window.h"
+#include "mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    setCentralWidget(new TheOpenGlWidget);
+
+    setCentralWidget(QWidget::createWindowContainer(new Window(), this));
 
     QDockWidget *dw = new QDockWidget;
     dw->setWidget(new Dialog);

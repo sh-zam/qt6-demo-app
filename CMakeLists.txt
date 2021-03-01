@@ -34,12 +34,15 @@ find_package(Qt6 COMPONENTS OpenGLWidgets)
 find_package(Qt6 COMPONENTS Quick)
 find_package(Qt6 COMPONENTS Qml)
 find_package(Qt6 COMPONENTS QuickWidgets)
+find_package(Qt6 COMPONENTS GuiPrivate)
 
 
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
         mainwindow.h
+        window.cpp
+        window.h
         mainwindow.ui
         TheOpenGlWidget.cpp
         dialog.cpp
@@ -72,6 +75,7 @@ target_link_libraries(test1 PRIVATE
     Qt::Qml
     Qt::Quick
     Qt::QuickWidgets
+    Qt::GuiPrivate
     )
 
 set(shaders_resource_files
@@ -88,6 +92,31 @@ qt6_add_resources(test1 "shaders"
 set(textures_resource_files
     "cube.png"
 )
+
+
+# Resources:
+set_source_files_properties("./qt256.png"
+    PROPERTIES QT_RESOURCE_ALIAS "qt256.png"
+)
+set_source_files_properties("./texture.frag.qsb"
+    PROPERTIES QT_RESOURCE_ALIAS "texture.frag.qsb"
+)
+set_source_files_properties("./texture.vert.qsb"
+    PROPERTIES QT_RESOURCE_ALIAS "texture.vert.qsb"
+)
+set(texuploads_resource_files
+    "./qt256.png"
+    "./texture.frag.qsb"
+    "./texture.vert.qsb"
+)
+
+qt6_add_resources(test1 "texuploads"
+    PREFIX
+        "/"
+    FILES
+        ${texuploads_resource_files}
+)
+
 
 qt6_add_resources(test1 "textures"
     PREFIX

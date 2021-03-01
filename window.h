@@ -50,85 +50,103 @@
 // Adapted from hellominimalcrossgfxtriangle with the frame rendering stripped out.
 // Include this file and implement Window::customInit, release and render.
 // Debug/validation layer is enabled for D3D and Vulkan.
+#ifndef WINDOW_H
+#define WINDOW_H
 
-#include <QPainter>
+
 #include <QGuiApplication>
-#include <QCommandLineParser>
 #include <QWindow>
-#include <QPlatformSurfaceEvent>
-#include <QElapsedTimer>
-#include <QTimer>
-#include <QLoggingCategory>
-#include <QColorSpace>
-#include "mainwindow.h"
-#include "window.h"
+#include <QtGui/private/qshader_p.h>
+#include <QFile>
+#include <QtGui/private/qrhiprofiler_p.h>
+#include <QtGui/private/qrhinull_p.h>
 
-#include <QApplication>
-
-
-int main(int argc, char *argv[])
-{
-    QApplication app(argc, argv);
-
-    // Defaults.
-#if defined(Q_OS_WIN)
-    graphicsApi = D3D11;
-#elif defined(Q_OS_MACOS) || defined(Q_OS_IOS)
-    graphicsApi = Metal;
-#elif QT_CONFIG(vulkan) && 0
-    graphicsApi = Vulkan;
-#else
-    graphicsApi = OpenGL;
+#ifndef QT_NO_OPENGL
+#include <QtGui/private/qrhigles2_p.h>
+#include <QOffscreenSurface>
 #endif
 
-#ifdef EXAMPLEFW_PREINIT
-    void preInit();
-    preInit();
-#endif
-
-    // OpenGL specifics.
-    QSurfaceFormat fmt;
-    fmt.setDepthBufferSize(24);
-    fmt.setStencilBufferSize(8);
-    if (sampleCount > 1)
-        fmt.setSamples(sampleCount);
-    if (scFlags.testFlag(QRhiSwapChain::NoVSync))
-        fmt.setSwapInterval(0);
-    if (scFlags.testFlag(QRhiSwapChain::sRGB))
-        fmt.setColorSpace(QColorSpace::SRgb);
-    // Exception: The alpha size is not necessarily OpenGL specific.
-    if (transparentBackground)
-        fmt.setAlphaBufferSize(8);
-    QSurfaceFormat::setDefaultFormat(fmt);
-
-    // Vulkan setup.
 #if QT_CONFIG(vulkan) && 0
-    QVulkanInstance inst;
-    if (graphicsApi == Vulkan) {
-        if (debugLayer) {
-            qDebug("Enabling Vulkan validation layer (if available)");
-#ifndef Q_OS_ANDROID
-            inst.setLayers(QByteArrayList() << "VK_LAYER_LUNARG_standard_validation");
-#else
-            inst.setLayers(QByteArrayList()
-                           << "VK_LAYER_GOOGLE_threading"
-                           << "VK_LAYER_LUNARG_parameter_validation"
-                           << "VK_LAYER_LUNARG_object_tracker"
-                           << "VK_LAYER_LUNARG_core_validation"
-                           << "VK_LAYER_LUNARG_image"
-                           << "VK_LAYER_LUNARG_swapchain"
-                           << "VK_LAYER_GOOGLE_unique_objects");
-#endif
-        }
-        inst.setExtensions(QRhiVulkanInitParams::preferredInstanceExtensions());
-        if (!inst.create()) {
-            qWarning("Failed to create Vulkan instance, switching to OpenGL");
-            graphicsApi = OpenGL;
-        }
-    }
+#include <QtGui/private/qrhivulkan_p.h>
 #endif
 
-    MainWindow w;
-    w.show();
-    return app.exec();
-}
+#ifdef Q_OS_WIN
+#include <QtGui/private/qrhid3d11_p.h>
+#endif
+
+#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+#include <QtGui/private/qrhimetal_p.h>
+#endif
+
+
+enum GraphicsApi
+{
+    Null,
+    OpenGL,
+    Vulkan,
+    D3D11,
+    Metal
+};
+
+extern GraphicsApi graphicsApi;
+
+extern QRhi::Flags rhiFlags;
+extern int sampleCount;
+extern QRhiSwapChain::Flags scFlags;
+extern QRhi::BeginFrameFlags beginFrameFlags;
+extern QRhi::EndFrameFlags endFrameFlags;
+extern int framesUntilTdr;
+extern bool transparentBackground ;
+extern bool debugLayer;
+
+
+
+class Window : public QWindow
+{
+public:
+    Window();
+    ~Window();
+
+protected:
+    void init();
+    void releaseResources();
+    void resizeSwapChain();
+    void releaseSwapChain();
+    void render();
+
+    void customInit();
+    void customRelease();
+    void customRender();
+
+    void exposeEvent(QExposeEvent *) override;
+    bool event(QEvent *) override;
+#ifdef EXAMPLEFW_KEYPRESS_EVENTS
+    void keyPressEvent(QKeyEvent *e) override;
+#endif
+
+    bool m_running = false;
+    bool m_notExposed = false;
+    bool m_newlyExposed = false;
+
+    QRhi *m_r = nullptr;
+    bool m_hasSwapChain = false;
+    QRhiSwapChain *m_sc = nullptr;
+    QRhiRenderBuffer *m_ds = nullptr;
+    QRhiRenderPassDescriptor *m_rp = nullptr;
+
+    QMatrix4x4 m_proj;
+
+    QElapsedTimer m_timer;
+    int m_frameCount;
+
+#ifndef QT_NO_OPENGL
+    QOffscreenSurface *m_fallbackSurface = nullptr;
+#endif
+
+    QColor m_clearColor;
+
+    friend int main(int, char**);
+};
+
+
+#endif // WINDOW_H
